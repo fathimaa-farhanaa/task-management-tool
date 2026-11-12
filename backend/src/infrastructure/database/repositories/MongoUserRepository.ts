@@ -44,10 +44,11 @@ export class MongoUserRepository implements IUserRepository {
     const clean = query.trim().toLowerCase();
     if (!clean) return [];
 
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const docs = await UserModel.find({
       $or: [
-        { username: { $regex: clean, $options: "i" } },
-        { email: { $regex: clean, $options: "i" } }
+        { username: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } }
       ]
     }).limit(limit);
 
