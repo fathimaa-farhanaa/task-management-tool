@@ -15,6 +15,7 @@ export interface AuthResponseDTO {
 
 export interface ProjectMember {
   userId: string;
+  username?: string;
   label?: string;
   joinedAt: string;
 }

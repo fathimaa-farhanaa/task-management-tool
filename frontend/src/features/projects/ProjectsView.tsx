@@ -342,6 +342,14 @@ export const ProjectsView: React.FC = () => {
 
   const isHost = selectedProject?.hostId === user?.id;
 
+  const getUserDisplayName = (userId: string | null | undefined): string => {
+    if (!userId) return "Unassigned";
+    if (userId === user?.id) return `Assigned to You (@${user?.username || "you"})`;
+    const found = selectedProject?.members.find((m) => m.userId === userId);
+    if (found?.username) return `@${found.username}`;
+    return `@user-${userId.substring(0, 8)}`;
+  };
+
   // --- Render Project Detail View ---
   if (selectedProject) {
     return (
@@ -423,7 +431,11 @@ export const ProjectsView: React.FC = () => {
                       </div>
                       <div>
                         <div style={styles.memberUserId}>
-                          {isCurrentUser ? `@you (${m.userId.substring(0, 8)})` : `@user-${m.userId.substring(0, 8)}`}
+                          {isCurrentUser
+                            ? `@you (${user?.username || m.username || m.userId.substring(0, 8)})`
+                            : m.username
+                            ? `@${m.username}`
+                            : `@user-${m.userId.substring(0, 8)}`}
                         </div>
                         {isMemberHost && <span style={styles.hostSubText}>Project Host</span>}
                       </div>
@@ -534,17 +546,18 @@ export const ProjectsView: React.FC = () => {
                             <option value="">-- Unassigned --</option>
                             {selectedProject.members.map((m) => (
                               <option key={m.userId} value={m.userId}>
-                                @user-{m.userId.substring(0, 8)} {m.label ? `(${m.label})` : ""}
+                                {m.userId === user?.id
+                                  ? `@you (${user?.username || m.username || m.userId.substring(0, 8)})`
+                                  : m.username
+                                  ? `@${m.username}`
+                                  : `@user-${m.userId.substring(0, 8)}`}{" "}
+                                {m.label ? `(${m.label})` : ""}
                               </option>
                             ))}
                           </select>
                         ) : (
                           <span style={styles.assigneeDisplay}>
-                            {task.assignedToUserId
-                              ? task.assignedToUserId === user?.id
-                                ? "Assigned to You"
-                                : `@user-${task.assignedToUserId.substring(0, 8)}`
-                              : "Unassigned"}
+                            {getUserDisplayName(task.assignedToUserId)}
                           </span>
                         )}
                       </div>
@@ -782,7 +795,8 @@ export const ProjectsView: React.FC = () => {
                       .filter((m) => m.userId !== user?.id)
                       .map((m) => (
                         <option key={m.userId} value={m.userId}>
-                          @user-{m.userId.substring(0, 8)} {m.label ? `(${m.label})` : ""}
+                          {m.username ? `@${m.username}` : `@user-${m.userId.substring(0, 8)}`}{" "}
+                          {m.label ? `(${m.label})` : ""}
                         </option>
                       ))}
                   </select>
@@ -881,7 +895,12 @@ export const ProjectsView: React.FC = () => {
                     <option value="">-- Leave Unassigned --</option>
                     {selectedProject.members.map((m) => (
                       <option key={m.userId} value={m.userId}>
-                        @user-{m.userId.substring(0, 8)} {m.label ? `(${m.label})` : ""}
+                        {m.userId === user?.id
+                          ? `@you (${user?.username || m.username || m.userId.substring(0, 8)})`
+                          : m.username
+                          ? `@${m.username}`
+                          : `@user-${m.userId.substring(0, 8)}`}{" "}
+                        {m.label ? `(${m.label})` : ""}
                       </option>
                     ))}
                   </select>

@@ -31,7 +31,7 @@ export class ProjectService {
     });
 
     await this.projectRepository.save(project);
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async getProjectById(userId: string, projectId: string): Promise<ProjectResponseDTO> {
@@ -41,12 +41,12 @@ export class ProjectService {
       throw new UnauthorizedError("You are not a member of this project");
     }
 
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async getUserProjects(userId: string): Promise<ProjectResponseDTO[]> {
     const projects = await this.projectRepository.findByUserId(userId);
-    return projects.map((p) => this.toDTO(p));
+    return await Promise.all(projects.map((p) => this.toDTO(p)));
   }
 
   public async updateProject(userId: string, projectId: string, dto: UpdateProjectRequestDTO ): 
@@ -55,7 +55,7 @@ export class ProjectService {
     project.updateDetails(userId, dto.title, dto.description);
 
     await this.projectRepository.save(project);
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async addMember(
@@ -72,7 +72,7 @@ export class ProjectService {
 
     project.addMember(hostId, userToAdd.getId, dto.label);
     await this.projectRepository.save(project);
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async removeMember( callerId: string, projectId: string, targetUserId: string):
@@ -84,7 +84,7 @@ export class ProjectService {
 
     await this.taskRepository.unassignAllTasksForMember(projectId, targetUserId);
 
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async transferOwnership(
@@ -96,7 +96,7 @@ export class ProjectService {
 
     project.transferHost(callerId, dto.newHostId);
     await this.projectRepository.save(project);
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async setResponsibilityLabel(
@@ -109,7 +109,7 @@ export class ProjectService {
 
     project.setMemberResponsibility(hostId, targetUserId, dto.label);
     await this.projectRepository.save(project);
-    return this.toDTO(project);
+    return await this.toDTO(project);
   }
 
   public async deleteProject(hostUserId: string, projectId: string): Promise<void> {
@@ -131,13 +131,25 @@ export class ProjectService {
     return project;
   }
 
-  private toDTO(project: Project): ProjectResponseDTO {
+  private async toDTO(project: Project): Promise<ProjectResponseDTO> {
+    const memberDTOs = await Promise.all(
+      project.getMembers.map(async (m) => {
+        const u = await this.userRepository.findById(m.userId);
+        return {
+          userId: m.userId,
+          username: u ? u.getUsername : undefined,
+          label: m.label,
+          joinedAt: m.joinedAt
+        };
+      })
+    );
+
     return {
       id: project.getId,
       title: project.getTitle,
       description: project.getDescription,
       hostId: project.getHostId,
-      members: project.getMembers,
+      members: memberDTOs,
       createdAt: project.getCreatedAt,
       updatedAt: project.getUpdatedAt
     };

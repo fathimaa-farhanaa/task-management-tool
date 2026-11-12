@@ -1,11 +1,16 @@
-import { IMember } from "../../../domain/Project";
+export interface ProjectMemberDTO {
+  userId: string;
+  username?: string;
+  label?: string;
+  joinedAt: Date;
+}
 
 export interface IProjectAttributes {
   id: string;
   title: string;
   description: string;
   hostId: string;
-  members: ReadonlyArray<IMember>;
+  members: ReadonlyArray<ProjectMemberDTO>;
   createdAt: Date;
   updatedAt: Date;
 }
