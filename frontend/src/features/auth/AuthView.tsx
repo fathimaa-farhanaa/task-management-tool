@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
-import { LogIn, UserPlus, AlertCircle } from "lucide-react";
+import { LogIn, UserPlus, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export const AuthView: React.FC = () => {
   const { login, register } = useAuth();
@@ -11,6 +11,7 @@ export const AuthView: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -125,14 +126,25 @@ export const AuthView: React.FC = () => {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              required
-            />
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.passwordInput}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+                title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} color="#64748b" /> : <Eye size={18} color="#64748b" />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} style={styles.submitBtn}>
@@ -240,6 +252,33 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#0f172a",
     fontSize: "15px",
     outline: "none"
+  },
+  passwordWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center"
+  },
+  passwordInput: {
+    width: "100%",
+    padding: "11px 42px 11px 14px",
+    borderRadius: "8px",
+    border: "1px solid #cbd5e1",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    fontSize: "15px",
+    outline: "none"
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: "10px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px",
+    borderRadius: "4px"
   },
   submitBtn: {
     marginTop: "10px",
