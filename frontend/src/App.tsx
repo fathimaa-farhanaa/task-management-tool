@@ -4,6 +4,7 @@ import { AuthView } from "./features/auth/AuthView";
 import { Navbar } from "./components/Navbar";
 import type { NavTab } from "./components/Navbar";
 import { DashboardView } from "./features/dashboard/DashboardView";
+import { PersonalTasksView } from "./features/personal-tasks/PersonalTasksView";
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -26,11 +27,7 @@ const MainApp: React.FC = () => {
       <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
       <main>
         {activeTab === "dashboard" && <DashboardView />}
-        {activeTab === "personal" && (
-          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
-            Personal Tasks Component Loading...
-          </div>
-        )}
+        {activeTab === "personal" && <PersonalTasksView />}
         {activeTab === "projects" && (
           <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
             Projects Component Loading...
