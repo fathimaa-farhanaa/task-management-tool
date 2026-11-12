@@ -55,12 +55,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab }) => {
       </nav>
 
       <div style={styles.userSection}>
-        <div style={styles.userInfo}>
-          <User size={16} color="#94a3b8" />
+        <div style={styles.userBadge}>
+          <div style={styles.avatar}>
+            <User size={15} color="#2563eb" />
+          </div>
           <span style={styles.username}>@{user?.username}</span>
         </div>
+
         <button onClick={logout} style={styles.logoutBtn} title="Sign Out">
-          <LogOut size={16} />
+          <LogOut size={15} />
           <span>Logout</span>
         </button>
       </div>
@@ -70,84 +73,105 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab }) => {
 
 const styles: Record<string, React.CSSProperties> = {
   navbar: {
-    height: "64px",
-    backgroundColor: "#1e293b",
-    borderBottom: "1px solid #334155",
+    height: "68px",
+    backgroundColor: "#ffffff",
+    borderBottom: "1px solid #e2e8f0",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "0 28px",
+    padding: "0 36px",
     position: "sticky",
     top: 0,
-    zIndex: 100
+    zIndex: 100,
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
   },
   brand: {
     display: "flex",
     alignItems: "center",
-    gap: "10px"
+    gap: "12px"
   },
   logoBadge: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     color: "#ffffff",
     fontWeight: "700",
     fontSize: "14px",
-    padding: "4px 8px",
-    borderRadius: "6px"
+    padding: "5px 10px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)"
   },
   brandName: {
-    color: "#f8fafc",
-    fontSize: "18px",
-    fontWeight: "700"
+    color: "#0f172a",
+    fontSize: "19px",
+    fontWeight: "700",
+    letterSpacing: "-0.3px"
   },
   navLinks: {
     display: "flex",
-    gap: "8px"
+    gap: "6px",
+    backgroundColor: "#f1f5f9",
+    padding: "4px",
+    borderRadius: "10px"
   },
   navBtn: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "8px 14px",
+    padding: "8px 16px",
     borderRadius: "8px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#94a3b8",
+    color: "#64748b",
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
-    transition: "all 0.15s"
+    transition: "all 0.15s ease"
   },
   activeNavBtn: {
-    backgroundColor: "#0f172a",
-    color: "#38bdf8",
-    fontWeight: "600"
+    backgroundColor: "#ffffff",
+    color: "#2563eb",
+    fontWeight: "600",
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.06)"
   },
   userSection: {
     display: "flex",
     alignItems: "center",
-    gap: "14px"
+    gap: "12px"
   },
-  userInfo: {
+  userBadge: {
     display: "flex",
     alignItems: "center",
-    gap: "6px"
+    gap: "8px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    padding: "6px 12px",
+    borderRadius: "20px"
+  },
+  avatar: {
+    width: "24px",
+    height: "24px",
+    borderRadius: "50%",
+    backgroundColor: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
   },
   username: {
-    color: "#e2e8f0",
-    fontSize: "14px",
-    fontWeight: "500"
+    color: "#334155",
+    fontSize: "13px",
+    fontWeight: "600"
   },
   logoutBtn: {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "1px solid #475569",
-    backgroundColor: "transparent",
-    color: "#f87171",
+    padding: "7px 14px",
+    borderRadius: "8px",
+    border: "1px solid #fee2e2",
+    backgroundColor: "#fff5f5",
+    color: "#ef4444",
     fontSize: "13px",
     fontWeight: "500",
-    cursor: "pointer"
+    cursor: "pointer",
+    transition: "all 0.15s ease"
   }
 };

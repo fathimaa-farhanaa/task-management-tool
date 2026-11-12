@@ -10,6 +10,7 @@ export function createUserRoutes(
   router.use(authMiddleware);
 
   router.get("/me", userController.getProfile);
+  router.get("/search", userController.search);
   router.get("/:username", userController.findByUsername);
 
   return router;

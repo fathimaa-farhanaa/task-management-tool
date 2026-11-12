@@ -13,7 +13,7 @@ const MainApp: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
         Loading application...
       </div>
     );
@@ -24,7 +24,7 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#0f172a", color: "#f8fafc" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", color: "#0f172a" }}>
       <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
       <main>
         {activeTab === "dashboard" && <DashboardView />}

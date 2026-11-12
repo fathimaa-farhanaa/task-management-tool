@@ -150,37 +150,38 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0f172a",
-    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    padding: "20px"
+    backgroundColor: "#f8fafc",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    padding: "24px"
   },
   card: {
     width: "100%",
     maxWidth: "440px",
-    backgroundColor: "#1e293b",
+    backgroundColor: "#ffffff",
     borderRadius: "16px",
     padding: "36px",
-    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
-    border: "1px solid #334155"
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04)",
+    border: "1px solid #e2e8f0"
   },
   header: {
     textAlign: "center",
-    marginBottom: "24px"
+    marginBottom: "28px"
   },
   title: {
-    color: "#f8fafc",
+    color: "#0f172a",
     fontSize: "26px",
     fontWeight: "700",
+    letterSpacing: "-0.5px",
     margin: "0 0 6px 0"
   },
   subtitle: {
-    color: "#94a3b8",
+    color: "#64748b",
     fontSize: "14px",
     margin: 0
   },
   tabs: {
     display: "flex",
-    backgroundColor: "#0f172a",
+    backgroundColor: "#f1f5f9",
     borderRadius: "10px",
     padding: "4px",
     marginBottom: "24px"
@@ -194,21 +195,22 @@ const styles: Record<string, React.CSSProperties> = {
     border: "none",
     borderRadius: "8px",
     background: "transparent",
-    color: "#94a3b8",
+    color: "#64748b",
     fontSize: "14px",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.2s"
   },
   activeTab: {
-    backgroundColor: "#3b82f6",
-    color: "#ffffff"
+    backgroundColor: "#ffffff",
+    color: "#2563eb",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)"
   },
   errorBox: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-    border: "1px solid #ef4444",
-    color: "#fca5a5",
-    padding: "12px",
+    backgroundColor: "#fef2f2",
+    border: "1px solid #fecaca",
+    color: "#b91c1c",
+    padding: "12px 14px",
     borderRadius: "8px",
     fontSize: "14px",
     display: "flex",
@@ -226,29 +228,30 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "6px"
   },
   label: {
-    color: "#cbd5e1",
+    color: "#334155",
     fontSize: "13px",
-    fontWeight: "500"
+    fontWeight: "600"
   },
   input: {
-    padding: "12px 14px",
+    padding: "11px 14px",
     borderRadius: "8px",
-    border: "1px solid #334155",
-    backgroundColor: "#0f172a",
-    color: "#f8fafc",
+    border: "1px solid #cbd5e1",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
     fontSize: "15px",
     outline: "none"
   },
   submitBtn: {
-    marginTop: "8px",
+    marginTop: "10px",
     padding: "12px",
     borderRadius: "8px",
     border: "none",
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     color: "#ffffff",
     fontSize: "15px",
     fontWeight: "600",
     cursor: "pointer",
+    boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)",
     transition: "background-color 0.2s"
   }
 };

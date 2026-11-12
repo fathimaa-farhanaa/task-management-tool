@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { api } from "../../services/api";
 import { useAuth } from "../auth/AuthContext";
-import type { ProjectResponseDTO, TaskResponseDTO, TaskStatus } from "../../types/api.types";
+import type { ProjectResponseDTO, TaskResponseDTO, TaskStatus, UserResponseDTO } from "../../types/api.types";
 import {
   Plus,
   Crown,
@@ -15,7 +15,10 @@ import {
   Trash2,
   Tag,
   ArrowLeft,
-  X
+  X,
+  Search,
+  Check,
+  Loader2
 } from "lucide-react";
 
 export const ProjectsView: React.FC = () => {
@@ -35,14 +38,22 @@ export const ProjectsView: React.FC = () => {
   const [projectTasks, setProjectTasks] = useState<TaskResponseDTO[]>([]);
   const [tasksLoading, setTasksLoading] = useState<boolean>(false);
 
-  // Modals for Selected Project
+  // Multi-Select Member Search Modal State
   const [showAddMember, setShowAddMember] = useState<boolean>(false);
-  const [memberUsername, setMemberUsername] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<UserResponseDTO[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<UserResponseDTO[]>([]);
   const [memberLabel, setMemberLabel] = useState<string>("");
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isAddingMembers, setIsAddingMembers] = useState<boolean>(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<number | null>(null);
 
+  // Transfer Host Modal
   const [showTransferHost, setShowTransferHost] = useState<boolean>(false);
   const [newHostId, setNewHostId] = useState<string>("");
 
+  // Create Task Modal
   const [showCreateTask, setShowCreateTask] = useState<boolean>(false);
   const [taskTitle, setTaskTitle] = useState<string>("");
   const [taskDesc, setTaskDesc] = useState<string>("");
@@ -62,6 +73,46 @@ export const ProjectsView: React.FC = () => {
       loadProjectDetails(selectedProjectId);
     }
   }, [selectedProjectId]);
+
+  // Debounced live user search for Add Member modal
+  useEffect(() => {
+    if (!showAddMember) {
+      setSearchQuery("");
+      setSearchResults([]);
+      return;
+    }
+
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+    }
+
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        const res = await api.get<UserResponseDTO[]>("/users/search", {
+          params: { q: trimmed }
+        });
+        setSearchResults(res.data);
+      } catch (err) {
+        console.error("User search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, showAddMember]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -127,21 +178,43 @@ export const ProjectsView: React.FC = () => {
 
   // --- Member Actions ---
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  const handleToggleSelectUser = (targetUser: UserResponseDTO) => {
+    if (selectedUsers.some((u) => u.id === targetUser.id)) {
+      setSelectedUsers(selectedUsers.filter((u) => u.id !== targetUser.id));
+    } else {
+      setSelectedUsers([...selectedUsers, targetUser]);
+    }
+  };
+
+  const handleRemoveSelectedChip = (userId: string) => {
+    setSelectedUsers(selectedUsers.filter((u) => u.id !== userId));
+  };
+
+  const handleAddSelectedMembers = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProjectId || !memberUsername.trim()) return;
+    if (!selectedProjectId || selectedUsers.length === 0) return;
+
+    setIsAddingMembers(true);
+    setAddMemberError(null);
 
     try {
-      const res = await api.post<ProjectResponseDTO>(`/projects/${selectedProjectId}/members`, {
-        username: memberUsername.trim(),
-        label: memberLabel.trim() || undefined
-      });
-      setSelectedProject(res.data);
+      // Add each selected user in parallel
+      for (const targetUser of selectedUsers) {
+        await api.post<ProjectResponseDTO>(`/projects/${selectedProjectId}/members`, {
+          username: targetUser.username,
+          label: memberLabel.trim() || undefined
+        });
+      }
+
+      await loadProjectDetails(selectedProjectId);
       setShowAddMember(false);
-      setMemberUsername("");
+      setSelectedUsers([]);
+      setSearchQuery("");
       setMemberLabel("");
     } catch (err: any) {
-      alert(err.message || "Failed to add member");
+      setAddMemberError(err.message || "Failed to add one or more members");
+    } finally {
+      setIsAddingMembers(false);
     }
   };
 
@@ -161,7 +234,6 @@ export const ProjectsView: React.FC = () => {
         fetchProjects();
       } else {
         setSelectedProject(res.data);
-        // Reload tasks because tasks assigned to that member are now unassigned!
         loadProjectDetails(selectedProjectId);
       }
     } catch (err: any) {
@@ -278,9 +350,9 @@ export const ProjectsView: React.FC = () => {
           <ArrowLeft size={16} /> Back to Projects
         </button>
 
-        <div style={styles.projectHeader}>
+        <div style={styles.projectHeaderCard}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <h1 style={styles.projectTitle}>{selectedProject.title}</h1>
               {isHost && (
                 <span style={styles.hostBadge}>
@@ -293,14 +365,14 @@ export const ProjectsView: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {isHost && (
               <>
                 <button onClick={() => setShowTransferHost(true)} style={styles.secondaryBtn}>
-                  <ArrowRightLeft size={16} /> Transfer Ownership
+                  <ArrowRightLeft size={15} /> Transfer Ownership
                 </button>
                 <button onClick={() => handleDeleteProject(selectedProject.id)} style={styles.dangerBtn}>
-                  <Trash2 size={16} /> Delete Project
+                  <Trash2 size={15} /> Delete Project
                 </button>
               </>
             )}
@@ -313,17 +385,26 @@ export const ProjectsView: React.FC = () => {
         </div>
 
         {/* Members Roster Section */}
-        <div style={styles.membersCard}>
-          <div style={styles.membersHeader}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Users size={18} color="#38bdf8" />
-              <h2 style={styles.cardSectionTitle}>
+        <div style={styles.cardSection}>
+          <div style={styles.sectionHeaderRow}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Users size={20} color="#2563eb" />
+              <h2 style={styles.sectionTitle}>
                 Project Members ({selectedProject.members.length})
               </h2>
             </div>
             {isHost && (
-              <button onClick={() => setShowAddMember(true)} style={styles.smallPrimaryBtn}>
-                <UserPlus size={14} /> Add Member
+              <button
+                onClick={() => {
+                  setSelectedUsers([]);
+                  setSearchQuery("");
+                  setMemberLabel("");
+                  setAddMemberError(null);
+                  setShowAddMember(true);
+                }}
+                style={styles.primaryBtn}
+              >
+                <UserPlus size={16} /> Add Members
               </button>
             )}
           </div>
@@ -336,11 +417,16 @@ export const ProjectsView: React.FC = () => {
               return (
                 <div key={m.userId} style={styles.memberItem}>
                   <div style={styles.memberInfoRow}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {isMemberHost && <Crown size={15} color="#f59e0b" />}
-                      <span style={styles.memberUserId}>
-                        {isCurrentUser ? `@you (${m.userId.substring(0, 8)})` : `@user-${m.userId.substring(0, 8)}`}
-                      </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={styles.avatarMini}>
+                        {isMemberHost ? <Crown size={14} color="#d97706" /> : <Users size={14} color="#2563eb" />}
+                      </div>
+                      <div>
+                        <div style={styles.memberUserId}>
+                          {isCurrentUser ? `@you (${m.userId.substring(0, 8)})` : `@user-${m.userId.substring(0, 8)}`}
+                        </div>
+                        {isMemberHost && <span style={styles.hostSubText}>Project Host</span>}
+                      </div>
                     </div>
 
                     {/* Member Responsibility Label */}
@@ -373,7 +459,7 @@ export const ProjectsView: React.FC = () => {
                       style={styles.removeMemberBtn}
                       title="Remove Member"
                     >
-                      <UserMinus size={14} color="#f87171" /> Remove
+                      <UserMinus size={14} /> Remove
                     </button>
                   )}
                 </div>
@@ -383,11 +469,11 @@ export const ProjectsView: React.FC = () => {
         </div>
 
         {/* Project Tasks Section */}
-        <div style={styles.tasksSection}>
-          <div style={styles.tasksHeader}>
+        <div style={styles.cardSection}>
+          <div style={styles.sectionHeaderRow}>
             <div>
-              <h2 style={styles.cardSectionTitle}>Project Tasks</h2>
-              <p style={{ color: "#94a3b8", fontSize: "13px", margin: "4px 0 0 0" }}>
+              <h2 style={styles.sectionTitle}>Project Tasks</h2>
+              <p style={{ color: "#64748b", fontSize: "13px", margin: "4px 0 0 0" }}>
                 {isHost
                   ? "As Host, you can create, assign, and manage all tasks."
                   : "As Member, you can update the status of tasks assigned to you."}
@@ -419,19 +505,21 @@ export const ProjectsView: React.FC = () => {
                       </div>
                       {isHost && (
                         <button onClick={() => handleDeleteTask(task.id)} style={styles.iconBtn} title="Delete Task">
-                          <Trash2 size={16} color="#f87171" />
+                          <Trash2 size={16} color="#ef4444" />
                         </button>
                       )}
                     </div>
 
                     {/* Labels */}
-                    <div style={styles.labelRow}>
-                      {task.labels.map((lbl) => (
-                        <span key={lbl} style={styles.labelBadge}>
-                          #{lbl}
-                        </span>
-                      ))}
-                    </div>
+                    {task.labels.length > 0 && (
+                      <div style={styles.labelRow}>
+                        {task.labels.map((lbl) => (
+                          <span key={lbl} style={styles.labelBadge}>
+                            #{lbl}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     <div style={styles.taskFooter}>
                       {/* Assignee Control */}
@@ -495,45 +583,173 @@ export const ProjectsView: React.FC = () => {
           )}
         </div>
 
-        {/* Modal: Add Member */}
+        {/* MODAL: Add Member (Live Search & Multi-Select) */}
         {showAddMember && (
           <div style={styles.modalOverlay}>
-            <div style={styles.modalContent}>
+            <div style={{ ...styles.modalContent, maxWidth: "560px" }}>
               <div style={styles.modalHeader}>
-                <h3 style={styles.modalTitle}>Add Project Member</h3>
-                <X size={18} color="#94a3b8" style={{ cursor: "pointer" }} onClick={() => setShowAddMember(false)} />
-              </div>
-              <form onSubmit={handleAddMember} style={styles.modalForm}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.inputLabel}>Username *</label>
-                  <input
-                    type="text"
-                    placeholder="Enter registered username"
-                    value={memberUsername}
-                    onChange={(e) => setMemberUsername(e.target.value)}
-                    style={styles.modalInput}
-                    required
-                  />
+                <div>
+                  <h3 style={styles.modalTitle}>Add Project Members</h3>
+                  <p style={{ color: "#64748b", fontSize: "13px", margin: "4px 0 0 0" }}>
+                    Search registered users by username or email and select one or multiple to add.
+                  </p>
                 </div>
+                <X size={20} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setShowAddMember(false)} />
+              </div>
+
+              {addMemberError && (
+                <div style={styles.errorBox}>
+                  {addMemberError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddSelectedMembers} style={styles.modalForm}>
+                {/* Selected Users Chips Container */}
+                <div>
+                  <label style={styles.inputLabel}>
+                    Selected Members ({selectedUsers.length})
+                  </label>
+                  {selectedUsers.length === 0 ? (
+                    <div style={styles.emptyChipsBox}>
+                      No users selected yet. Search below to pick members.
+                    </div>
+                  ) : (
+                    <div style={styles.chipsContainer}>
+                      {selectedUsers.map((u) => (
+                        <span key={u.id} style={styles.userChip}>
+                          <span style={styles.chipName}>@{u.username}</span>
+                          <span style={styles.chipEmail}>({u.email})</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSelectedChip(u.id)}
+                            style={styles.chipRemoveBtn}
+                            title="Remove"
+                          >
+                            <X size={13} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Live Search Input with Dropdown */}
+                <div style={styles.searchSection}>
+                  <label style={styles.inputLabel}>Search Users by Username or Email</label>
+                  <div style={styles.searchInputWrapper}>
+                    <Search size={16} color="#94a3b8" style={{ marginLeft: 12, flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      placeholder="Type username or email (e.g. alex, john@...)"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={styles.searchInput}
+                      autoFocus
+                    />
+                    {isSearching && (
+                      <Loader2 size={16} color="#2563eb" style={{ marginRight: 12, animation: "spin 1s linear infinite" }} />
+                    )}
+                  </div>
+
+                  {/* Search Dropdown Results */}
+                  {searchQuery.trim().length > 0 && (
+                    <div style={styles.dropdownBox}>
+                      {searchResults.length === 0 ? (
+                        <div style={styles.dropdownEmpty}>
+                          {isSearching ? "Searching users..." : `No users found matching "${searchQuery}"`}
+                        </div>
+                      ) : (
+                        <div style={styles.dropdownList}>
+                          {searchResults.map((su) => {
+                            const isAlreadyMember = selectedProject.members.some((m) => m.userId === su.id);
+                            const isSelected = selectedUsers.some((u) => u.id === su.id);
+
+                            return (
+                              <div
+                                key={su.id}
+                                onClick={() => {
+                                  if (!isAlreadyMember) {
+                                    handleToggleSelectUser(su);
+                                  }
+                                }}
+                                style={{
+                                  ...styles.dropdownItem,
+                                  ...(isAlreadyMember ? styles.dropdownItemDisabled : {}),
+                                  ...(isSelected ? styles.dropdownItemSelected : {})
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={styles.dropdownAvatar}>
+                                    {su.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div style={styles.dropdownUsername}>@{su.username}</div>
+                                    <div style={styles.dropdownEmail}>{su.email}</div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  {isAlreadyMember ? (
+                                    <span style={styles.alreadyMemberTag}>Already Member</span>
+                                  ) : isSelected ? (
+                                    <span style={styles.selectedTag}>
+                                      <Check size={13} style={{ marginRight: 3 }} /> Selected
+                                    </span>
+                                  ) : (
+                                    <span style={styles.selectActionTag}>+ Select</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Optional Responsibility Label for the batch */}
                 <div style={styles.inputGroup}>
-                  <label style={styles.inputLabel}>Responsibility Label (Optional)</label>
+                  <label style={styles.inputLabel}>Responsibility Label (Optional for selected)</label>
                   <input
                     type="text"
-                    placeholder="e.g. Lead Developer, QA Specialist"
+                    placeholder="e.g. Frontend Dev, QA, Designer"
                     value={memberLabel}
                     onChange={(e) => setMemberLabel(e.target.value)}
                     style={styles.modalInput}
                   />
-                  <small style={{ color: "#64748b", fontSize: "11px" }}>
-                    Descriptive tag only; does not grant Host authority.
+                  <small style={{ color: "#64748b", fontSize: "12px", marginTop: 2 }}>
+                    Applied to all selected members. Does not grant Host privileges.
                   </small>
                 </div>
+
                 <div style={styles.modalActions}>
-                  <button type="button" onClick={() => setShowAddMember(false)} style={styles.cancelBtn}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddMember(false);
+                      setSelectedUsers([]);
+                      setSearchQuery("");
+                    }}
+                    style={styles.cancelBtn}
+                  >
                     Cancel
                   </button>
-                  <button type="submit" style={styles.primaryBtn}>
-                    Add Member
+                  <button
+                    type="submit"
+                    disabled={selectedUsers.length === 0 || isAddingMembers}
+                    style={{
+                      ...styles.primaryBtn,
+                      ...((selectedUsers.length === 0 || isAddingMembers) ? { opacity: 0.5, cursor: "not-allowed" } : {})
+                    }}
+                  >
+                    {isAddingMembers
+                      ? "Adding Members..."
+                      : selectedUsers.length > 1
+                      ? `Add ${selectedUsers.length} Members`
+                      : selectedUsers.length === 1
+                      ? "Add 1 Member"
+                      : "Add Members"}
                   </button>
                 </div>
               </form>
@@ -547,10 +763,10 @@ export const ProjectsView: React.FC = () => {
             <div style={styles.modalContent}>
               <div style={styles.modalHeader}>
                 <h3 style={styles.modalTitle}>Transfer Host Ownership</h3>
-                <X size={18} color="#94a3b8" style={{ cursor: "pointer" }} onClick={() => setShowTransferHost(false)} />
+                <X size={18} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setShowTransferHost(false)} />
               </div>
               <form onSubmit={handleTransferOwnership} style={styles.modalForm}>
-                <p style={{ color: "#cbd5e1", fontSize: "13px", margin: "0 0 12px 0" }}>
+                <p style={{ color: "#475569", fontSize: "13px", margin: "0 0 12px 0" }}>
                   Select an existing project member to transfer ownership to. You will become a regular member.
                 </p>
                 <div style={styles.inputGroup}>
@@ -575,7 +791,7 @@ export const ProjectsView: React.FC = () => {
                   <button type="button" onClick={() => setShowTransferHost(false)} style={styles.cancelBtn}>
                     Cancel
                   </button>
-                  <button type="submit" style={{ ...styles.primaryBtn, backgroundColor: "#f59e0b" }}>
+                  <button type="submit" style={{ ...styles.primaryBtn, backgroundColor: "#d97706" }}>
                     Confirm Transfer
                   </button>
                 </div>
@@ -590,7 +806,7 @@ export const ProjectsView: React.FC = () => {
             <div style={styles.modalContent}>
               <div style={styles.modalHeader}>
                 <h3 style={styles.modalTitle}>Edit Member Responsibility Label</h3>
-                <X size={18} color="#94a3b8" style={{ cursor: "pointer" }} onClick={() => setEditLabelUser(null)} />
+                <X size={18} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setEditLabelUser(null)} />
               </div>
               <form onSubmit={handleUpdateResponsibility} style={styles.modalForm}>
                 <div style={styles.inputGroup}>
@@ -622,7 +838,7 @@ export const ProjectsView: React.FC = () => {
             <div style={styles.modalContent}>
               <div style={styles.modalHeader}>
                 <h3 style={styles.modalTitle}>Create Project Task</h3>
-                <X size={18} color="#94a3b8" style={{ cursor: "pointer" }} onClick={() => setShowCreateTask(false)} />
+                <X size={18} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setShowCreateTask(false)} />
               </div>
               <form onSubmit={handleCreateProjectTask} style={styles.modalForm}>
                 <div style={styles.inputGroup}>
@@ -728,10 +944,10 @@ export const ProjectsView: React.FC = () => {
                 </div>
                 <p style={styles.cardProjectDesc}>{proj.description || "No description provided."}</p>
                 <div style={styles.cardFooter}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94a3b8", fontSize: "13px" }}>
-                    <Users size={14} /> {proj.members.length} member{proj.members.length !== 1 ? "s" : ""}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#64748b", fontSize: "13px" }}>
+                    <Users size={15} color="#2563eb" /> {proj.members.length} member{proj.members.length !== 1 ? "s" : ""}
                   </div>
-                  <span style={{ color: "#38bdf8", fontSize: "13px", fontWeight: "600" }}>Open Board →</span>
+                  <span style={{ color: "#2563eb", fontSize: "13px", fontWeight: "600" }}>Open Board →</span>
                 </div>
               </div>
             );
@@ -745,7 +961,7 @@ export const ProjectsView: React.FC = () => {
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Create New Project</h3>
-              <X size={18} color="#94a3b8" style={{ cursor: "pointer" }} onClick={() => setShowCreateModal(false)} />
+              <X size={18} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setShowCreateModal(false)} />
             </div>
             <form onSubmit={handleCreateProject} style={styles.modalForm}>
               <div style={styles.inputGroup}>
@@ -786,7 +1002,7 @@ export const ProjectsView: React.FC = () => {
 
 const styles: Record<string, any> = {
   container: {
-    padding: "32px",
+    padding: "36px 40px",
     maxWidth: "1200px",
     margin: "0 auto"
   },
@@ -794,41 +1010,44 @@ const styles: Record<string, any> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "24px"
+    marginBottom: "28px"
   },
   heading: {
-    fontSize: "24px",
+    fontSize: "26px",
     fontWeight: "700",
-    color: "#f8fafc",
+    color: "#0f172a",
+    letterSpacing: "-0.5px",
     margin: "0 0 6px 0"
   },
   subheading: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     margin: 0
   },
   primaryBtn: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     color: "#ffffff",
-    padding: "10px 16px",
-    borderRadius: "8px",
+    padding: "10px 18px",
+    borderRadius: "10px",
     border: "none",
     fontWeight: "600",
     fontSize: "14px",
-    cursor: "pointer"
+    cursor: "pointer",
+    boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)",
+    transition: "background-color 0.15s ease, transform 0.1s ease"
   },
   secondaryBtn: {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    backgroundColor: "#1e293b",
-    color: "#38bdf8",
+    backgroundColor: "#ffffff",
+    color: "#2563eb",
     padding: "8px 14px",
     borderRadius: "8px",
-    border: "1px solid #0284c7",
+    border: "1px solid #bfdbfe",
     fontWeight: "500",
     fontSize: "13px",
     cursor: "pointer"
@@ -837,11 +1056,11 @@ const styles: Record<string, any> = {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    color: "#f87171",
+    backgroundColor: "#fff5f5",
+    color: "#ef4444",
     padding: "8px 14px",
     borderRadius: "8px",
-    border: "1px solid #ef4444",
+    border: "1px solid #fee2e2",
     fontWeight: "500",
     fontSize: "13px",
     cursor: "pointer"
@@ -852,163 +1071,166 @@ const styles: Record<string, any> = {
     gap: "6px",
     backgroundColor: "transparent",
     border: "none",
-    color: "#94a3b8",
+    color: "#64748b",
     fontSize: "14px",
+    fontWeight: "500",
     cursor: "pointer",
-    marginBottom: "16px"
+    marginBottom: "20px"
   },
-  projectHeader: {
+  projectHeaderCard: {
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: "24px",
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "24px"
+    marginBottom: "28px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "26px",
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
   },
   projectTitle: {
     fontSize: "24px",
     fontWeight: "700",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: 0
   },
   projectDesc: {
-    color: "#cbd5e1",
+    color: "#475569",
     fontSize: "14px",
-    margin: "8px 0 0 0"
+    margin: "8px 0 0 0",
+    lineHeight: "1.5"
   },
   hostBadge: {
     display: "inline-flex",
     alignItems: "center",
     gap: "4px",
-    backgroundColor: "rgba(245, 158, 11, 0.15)",
-    color: "#f59e0b",
-    border: "1px solid #f59e0b",
+    backgroundColor: "#fffbeb",
+    color: "#d97706",
+    border: "1px solid #fde68a",
     fontSize: "11px",
     fontWeight: "700",
     padding: "2px 8px",
-    borderRadius: "4px"
+    borderRadius: "6px"
   },
   memberBadge: {
     display: "inline-flex",
     alignItems: "center",
-    backgroundColor: "#334155",
-    color: "#94a3b8",
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
     fontSize: "11px",
     fontWeight: "600",
     padding: "2px 8px",
-    borderRadius: "4px"
+    borderRadius: "6px"
   },
-  membersCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "20px",
-    marginBottom: "28px"
+  cardSection: {
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "24px",
+    marginBottom: "28px",
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
   },
-  membersHeader: {
+  sectionHeaderRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "16px",
-    borderBottom: "1px solid #334155",
-    paddingBottom: "12px"
+    marginBottom: "20px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "14px"
   },
-  cardSectionTitle: {
-    fontSize: "16px",
+  sectionTitle: {
+    fontSize: "17px",
     fontWeight: "600",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: 0
-  },
-  smallPrimaryBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "5px",
-    backgroundColor: "#0284c7",
-    color: "#ffffff",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "none",
-    fontSize: "12px",
-    fontWeight: "600",
-    cursor: "pointer"
   },
   memberGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "12px"
+    gap: "14px"
   },
   memberItem: {
-    backgroundColor: "#0f172a",
-    border: "1px solid #334155",
-    borderRadius: "8px",
-    padding: "12px 14px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    padding: "14px 16px",
     display: "flex",
     flexDirection: "column",
-    gap: "8px"
+    gap: "10px"
   },
   memberInfoRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between"
   },
+  avatarMini: {
+    width: "30px",
+    height: "30px",
+    borderRadius: "8px",
+    backgroundColor: "#eff6ff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
   memberUserId: {
     fontSize: "13px",
-    color: "#f8fafc",
-    fontWeight: "500"
+    color: "#0f172a",
+    fontWeight: "600"
+  },
+  hostSubText: {
+    fontSize: "11px",
+    color: "#d97706",
+    fontWeight: "600"
   },
   respBadge: {
     fontSize: "11px",
-    backgroundColor: "#1e3a8a",
-    color: "#93c5fd",
-    padding: "2px 6px",
-    borderRadius: "4px"
+    backgroundColor: "#eff6ff",
+    color: "#1d4ed8",
+    border: "1px solid #bfdbfe",
+    padding: "2px 8px",
+    borderRadius: "6px",
+    fontWeight: "500"
   },
   noLabel: {
     fontSize: "11px",
-    color: "#64748b",
+    color: "#94a3b8",
     fontStyle: "italic"
   },
   labelEditBtn: {
     background: "transparent",
     border: "none",
-    color: "#94a3b8",
+    color: "#64748b",
     cursor: "pointer",
-    padding: "2px"
+    padding: "2px",
+    display: "flex",
+    alignItems: "center"
   },
   removeMemberBtn: {
     alignSelf: "flex-end",
-    background: "transparent",
-    border: "none",
-    color: "#f87171",
-    fontSize: "12px",
+    background: "#fff5f5",
+    border: "1px solid #fee2e2",
+    color: "#ef4444",
+    fontSize: "11px",
+    fontWeight: "500",
+    borderRadius: "6px",
+    padding: "4px 8px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     gap: "4px"
   },
-  tasksSection: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px"
-  },
-  tasksHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between"
-  },
   statusMsg: {
-    color: "#94a3b8",
+    color: "#64748b",
     textAlign: "center",
-    padding: "40px"
+    padding: "40px",
+    fontSize: "14px"
   },
   emptyCard: {
-    backgroundColor: "#1e293b",
-    border: "1px dashed #334155",
-    color: "#64748b",
+    backgroundColor: "#ffffff",
+    border: "1px dashed #cbd5e1",
+    color: "#94a3b8",
     padding: "40px",
-    borderRadius: "12px",
+    borderRadius: "14px",
     textAlign: "center",
     fontStyle: "italic"
   },
@@ -1018,10 +1240,11 @@ const styles: Record<string, any> = {
     gap: "14px"
   },
   taskCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
     borderRadius: "12px",
-    padding: "18px"
+    padding: "18px",
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)"
   },
   taskCardTop: {
     display: "flex",
@@ -1029,35 +1252,36 @@ const styles: Record<string, any> = {
     justifyContent: "space-between"
   },
   taskCardTitle: {
-    fontSize: "16px",
+    fontSize: "15px",
     fontWeight: "600",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: "0 0 4px 0"
   },
   taskDesc: {
     fontSize: "13px",
-    color: "#cbd5e1",
-    margin: "4px 0"
+    color: "#475569",
+    margin: "4px 0",
+    lineHeight: "1.4"
   },
   labelRow: {
     display: "flex",
     flexWrap: "wrap",
     gap: "6px",
-    margin: "8px 0"
+    margin: "10px 0"
   },
   labelBadge: {
     fontSize: "11px",
-    backgroundColor: "#0f172a",
-    color: "#38bdf8",
-    border: "1px solid #1e40af",
-    padding: "2px 6px",
+    backgroundColor: "#f0f9ff",
+    color: "#0369a1",
+    border: "1px solid #bae6fd",
+    padding: "2px 7px",
     borderRadius: "4px"
   },
   taskFooter: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTop: "1px solid #334155",
+    borderTop: "1px solid #f1f5f9",
     paddingTop: "12px",
     marginTop: "12px",
     flexWrap: "wrap",
@@ -1070,12 +1294,13 @@ const styles: Record<string, any> = {
   },
   footerLabel: {
     fontSize: "12px",
-    color: "#64748b"
+    color: "#64748b",
+    fontWeight: "500"
   },
   assignSelect: {
-    backgroundColor: "#0f172a",
-    color: "#f8fafc",
-    border: "1px solid #334155",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    border: "1px solid #cbd5e1",
     borderRadius: "6px",
     padding: "4px 8px",
     fontSize: "12px",
@@ -1083,11 +1308,12 @@ const styles: Record<string, any> = {
   },
   assigneeDisplay: {
     fontSize: "12px",
-    color: "#93c5fd",
+    color: "#2563eb",
     fontWeight: "500",
-    backgroundColor: "#172554",
+    backgroundColor: "#eff6ff",
+    border: "1px solid #bfdbfe",
     padding: "3px 8px",
-    borderRadius: "4px"
+    borderRadius: "6px"
   },
   statusBox: {
     display: "flex",
@@ -1102,23 +1328,36 @@ const styles: Record<string, any> = {
     display: "flex",
     alignItems: "center",
     gap: "4px",
-    padding: "4px 8px",
+    padding: "5px 10px",
     borderRadius: "6px",
-    border: "1px solid #334155",
-    backgroundColor: "#0f172a",
-    color: "#94a3b8",
+    border: "1px solid #e2e8f0",
+    backgroundColor: "#ffffff",
+    color: "#64748b",
     fontSize: "11px",
     fontWeight: "500",
     cursor: "pointer"
   },
   statusBtnActive: (status: TaskStatus) => {
-    let color = "#f59e0b";
-    if (status === "IN_PROGRESS") color = "#38bdf8";
-    if (status === "COMPLETED") color = "#22c55e";
+    if (status === "COMPLETED") {
+      return {
+        borderColor: "#a7f3d0",
+        backgroundColor: "#ecfdf5",
+        color: "#059669",
+        fontWeight: "600"
+      };
+    }
+    if (status === "IN_PROGRESS") {
+      return {
+        borderColor: "#bfdbfe",
+        backgroundColor: "#eff6ff",
+        color: "#2563eb",
+        fontWeight: "600"
+      };
+    }
     return {
-      borderColor: color,
-      backgroundColor: `${color}15`,
-      color: color,
+      borderColor: "#fde68a",
+      backgroundColor: "#fffbeb",
+      color: "#d97706",
       fontWeight: "600"
     };
   },
@@ -1131,15 +1370,16 @@ const styles: Record<string, any> = {
   projectGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-    gap: "18px"
+    gap: "20px"
   },
   projectCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "20px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "22px",
     cursor: "pointer",
-    transition: "border-color 0.2s"
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+    transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease"
   },
   cardHeaderRow: {
     display: "flex",
@@ -1148,24 +1388,24 @@ const styles: Record<string, any> = {
     marginBottom: "10px"
   },
   cardProjectTitle: {
-    fontSize: "16px",
+    fontSize: "17px",
     fontWeight: "600",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: 0
   },
   cardProjectDesc: {
     fontSize: "13px",
-    color: "#94a3b8",
-    lineHeight: "1.4",
+    color: "#64748b",
+    lineHeight: "1.5",
     margin: "0 0 16px 0",
-    minHeight: "36px"
+    minHeight: "38px"
   },
   cardFooter: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTop: "1px solid #334155",
-    paddingTop: "12px"
+    borderTop: "1px solid #f1f5f9",
+    paddingTop: "14px"
   },
   modalOverlay: {
     position: "fixed",
@@ -1173,7 +1413,8 @@ const styles: Record<string, any> = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    backdropFilter: "blur(4px)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1181,29 +1422,30 @@ const styles: Record<string, any> = {
     padding: "20px"
   },
   modalContent: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "14px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
     width: "100%",
-    maxWidth: "460px",
-    padding: "24px"
+    maxWidth: "480px",
+    padding: "28px",
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)"
   },
   modalHeader: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: "16px"
+    marginBottom: "20px"
   },
   modalTitle: {
     fontSize: "18px",
-    fontWeight: "600",
-    color: "#f8fafc",
+    fontWeight: "700",
+    color: "#0f172a",
     margin: 0
   },
   modalForm: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px"
+    gap: "18px"
   },
   inputGroup: {
     display: "flex",
@@ -1212,15 +1454,15 @@ const styles: Record<string, any> = {
   },
   inputLabel: {
     fontSize: "13px",
-    color: "#cbd5e1",
-    fontWeight: "500"
+    color: "#334155",
+    fontWeight: "600"
   },
   modalInput: {
-    padding: "10px 12px",
-    backgroundColor: "#0f172a",
-    border: "1px solid #334155",
+    padding: "11px 14px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #cbd5e1",
     borderRadius: "8px",
-    color: "#f8fafc",
+    color: "#0f172a",
     fontSize: "14px",
     outline: "none"
   },
@@ -1231,12 +1473,176 @@ const styles: Record<string, any> = {
     marginTop: "8px"
   },
   cancelBtn: {
-    padding: "8px 14px",
-    backgroundColor: "transparent",
-    border: "1px solid #475569",
-    borderRadius: "6px",
-    color: "#cbd5e1",
+    padding: "9px 16px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+    color: "#475569",
     fontSize: "14px",
+    fontWeight: "500",
     cursor: "pointer"
+  },
+  errorBox: {
+    backgroundColor: "#fef2f2",
+    border: "1px solid #fecaca",
+    color: "#b91c1c",
+    padding: "10px 14px",
+    borderRadius: "8px",
+    fontSize: "13px",
+    marginBottom: "14px"
+  },
+  // Multi-select & search specific styles
+  emptyChipsBox: {
+    padding: "10px 14px",
+    backgroundColor: "#f8fafc",
+    border: "1px dashed #cbd5e1",
+    borderRadius: "8px",
+    color: "#94a3b8",
+    fontSize: "13px",
+    fontStyle: "italic"
+  },
+  chipsContainer: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    maxHeight: "120px",
+    overflowY: "auto",
+    padding: "8px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px"
+  },
+  userChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    backgroundColor: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    borderRadius: "20px",
+    padding: "4px 10px",
+    fontSize: "12px"
+  },
+  chipName: {
+    fontWeight: "600",
+    color: "#1d4ed8"
+  },
+  chipEmail: {
+    color: "#64748b",
+    fontSize: "11px"
+  },
+  chipRemoveBtn: {
+    background: "transparent",
+    border: "none",
+    color: "#64748b",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    padding: "1px"
+  },
+  searchSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    position: "relative"
+  },
+  searchInputWrapper: {
+    display: "flex",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px"
+  },
+  searchInput: {
+    flex: 1,
+    padding: "11px 12px",
+    border: "none",
+    outline: "none",
+    fontSize: "14px",
+    backgroundColor: "transparent",
+    color: "#0f172a"
+  },
+  dropdownBox: {
+    marginTop: "4px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: "10px",
+    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05)",
+    maxHeight: "220px",
+    overflowY: "auto",
+    zIndex: 20
+  },
+  dropdownEmpty: {
+    padding: "16px",
+    textAlign: "center",
+    color: "#94a3b8",
+    fontSize: "13px",
+    fontStyle: "italic"
+  },
+  dropdownList: {
+    display: "flex",
+    flexDirection: "column"
+  },
+  dropdownItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "10px 14px",
+    borderBottom: "1px solid #f1f5f9",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease"
+  },
+  dropdownItemDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
+    backgroundColor: "#f8fafc"
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#eff6ff"
+  },
+  dropdownAvatar: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "50%",
+    backgroundColor: "#dbeafe",
+    color: "#1d4ed8",
+    fontWeight: "700",
+    fontSize: "13px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  dropdownUsername: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#0f172a"
+  },
+  dropdownEmail: {
+    fontSize: "12px",
+    color: "#64748b"
+  },
+  alreadyMemberTag: {
+    fontSize: "11px",
+    color: "#64748b",
+    backgroundColor: "#f1f5f9",
+    padding: "3px 8px",
+    borderRadius: "4px",
+    fontWeight: "500"
+  },
+  selectedTag: {
+    display: "inline-flex",
+    alignItems: "center",
+    fontSize: "11px",
+    color: "#059669",
+    backgroundColor: "#ecfdf5",
+    border: "1px solid #a7f3d0",
+    padding: "3px 8px",
+    borderRadius: "4px",
+    fontWeight: "600"
+  },
+  selectActionTag: {
+    fontSize: "12px",
+    color: "#2563eb",
+    fontWeight: "600",
+    padding: "3px 8px"
   }
 };

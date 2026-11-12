@@ -22,6 +22,11 @@ export class UserService {
     return this.toDTO(user);
   }
 
+  public async searchUsers(query: string): Promise<UserResponseDTO[]> {
+    const users = await this.userRepository.search(query);
+    return users.map((u) => this.toDTO(u));
+  }
+
   private toDTO(user: User): UserResponseDTO {
     return {
       id: user.getId,

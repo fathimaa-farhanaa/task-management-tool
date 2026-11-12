@@ -24,15 +24,15 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: TaskStatus) => {
+  const getStatusStyle = (status: TaskStatus) => {
     switch (status) {
       case "COMPLETED":
-        return "#22c55e";
+        return { backgroundColor: "#ecfdf5", color: "#059669", border: "1px solid #a7f3d0" };
       case "IN_PROGRESS":
-        return "#38bdf8";
+        return { backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" };
       case "TODO":
       default:
-        return "#f59e0b";
+        return { backgroundColor: "#fffbeb", color: "#d97706", border: "1px solid #fde68a" };
     }
   };
 
@@ -54,8 +54,8 @@ export const DashboardView: React.FC = () => {
       {/* Metric Cards */}
       <div style={styles.grid}>
         <div style={styles.metricCard}>
-          <div style={styles.metricIconBox("#3b82f6")}>
-            <FolderGit2 size={24} color="#3b82f6" />
+          <div style={styles.metricIconBox("#2563eb")}>
+            <FolderGit2 size={24} color="#2563eb" />
           </div>
           <div>
             <div style={styles.metricValue}>{data?.hostedProjectsCount ?? 0}</div>
@@ -64,8 +64,8 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div style={styles.metricCard}>
-          <div style={styles.metricIconBox("#8b5cf6")}>
-            <Users size={24} color="#8b5cf6" />
+          <div style={styles.metricIconBox("#7c3aed")}>
+            <Users size={24} color="#7c3aed" />
           </div>
           <div>
             <div style={styles.metricValue}>{data?.memberProjectsCount ?? 0}</div>
@@ -74,8 +74,8 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div style={styles.metricCard}>
-          <div style={styles.metricIconBox("#06b6d4")}>
-            <ListTodo size={24} color="#06b6d4" />
+          <div style={styles.metricIconBox("#0891b2")}>
+            <ListTodo size={24} color="#0891b2" />
           </div>
           <div>
             <div style={styles.metricValue}>{data?.personalTasks.length ?? 0}</div>
@@ -84,8 +84,8 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div style={styles.metricCard}>
-          <div style={styles.metricIconBox("#10b981")}>
-            <CheckCircle2 size={24} color="#10b981" />
+          <div style={styles.metricIconBox("#059669")}>
+            <CheckCircle2 size={24} color="#059669" />
           </div>
           <div>
             <div style={styles.metricValue}>{data?.assignedProjectTasks.length ?? 0}</div>
@@ -99,7 +99,7 @@ export const DashboardView: React.FC = () => {
         {/* Assigned Project Tasks */}
         <div style={styles.sectionCard}>
           <div style={styles.sectionHeader}>
-            <Clock size={18} color="#38bdf8" />
+            <Clock size={20} color="#2563eb" />
             <h2 style={styles.sectionTitle}>Project Tasks Assigned to You</h2>
           </div>
           {data?.assignedProjectTasks.length === 0 ? (
@@ -113,8 +113,7 @@ export const DashboardView: React.FC = () => {
                     <span
                       style={{
                         ...styles.statusBadge,
-                        backgroundColor: `${getStatusColor(task.status)}20`,
-                        color: getStatusColor(task.status)
+                        ...getStatusStyle(task.status)
                       }}
                     >
                       {task.status.replace("_", " ")}
@@ -130,7 +129,7 @@ export const DashboardView: React.FC = () => {
         {/* Recent Personal Tasks */}
         <div style={styles.sectionCard}>
           <div style={styles.sectionHeader}>
-            <ListTodo size={18} color="#06b6d4" />
+            <ListTodo size={20} color="#0891b2" />
             <h2 style={styles.sectionTitle}>Recent Personal Tasks</h2>
           </div>
           {data?.personalTasks.length === 0 ? (
@@ -144,8 +143,7 @@ export const DashboardView: React.FC = () => {
                     <span
                       style={{
                         ...styles.statusBadge,
-                        backgroundColor: `${getStatusColor(task.status)}20`,
-                        color: getStatusColor(task.status)
+                        ...getStatusStyle(task.status)
                       }}
                     >
                       {task.status.replace("_", " ")}
@@ -164,101 +162,110 @@ export const DashboardView: React.FC = () => {
 
 const styles: Record<string, any> = {
   container: {
-    padding: "32px",
+    padding: "36px 40px",
     maxWidth: "1200px",
     margin: "0 auto"
   },
   loading: {
-    color: "#94a3b8",
+    color: "#64748b",
     textAlign: "center",
     padding: "60px",
     fontSize: "16px"
   },
   error: {
-    color: "#f87171",
-    padding: "20px",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderRadius: "8px",
+    color: "#b91c1c",
+    padding: "16px 20px",
+    backgroundColor: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "10px",
     margin: "32px auto",
     maxWidth: "800px"
   },
   header: {
-    marginBottom: "28px"
+    marginBottom: "32px"
   },
   pageTitle: {
-    fontSize: "24px",
+    fontSize: "26px",
     fontWeight: "700",
-    color: "#f8fafc",
+    color: "#0f172a",
+    letterSpacing: "-0.5px",
     margin: "0 0 6px 0"
   },
   pageSubtitle: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     margin: 0
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "18px",
-    marginBottom: "32px"
+    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+    gap: "20px",
+    marginBottom: "36px"
   },
   metricCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "20px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "22px 24px",
     display: "flex",
     alignItems: "center",
-    gap: "16px"
+    gap: "18px",
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+    transition: "transform 0.15s ease, box-shadow 0.15s ease"
   },
   metricIconBox: (color: string) => ({
-    width: "48px",
-    height: "48px",
-    borderRadius: "10px",
+    width: "50px",
+    height: "50px",
+    borderRadius: "12px",
     backgroundColor: `${color}15`,
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0
   }),
   metricValue: {
-    fontSize: "24px",
+    fontSize: "28px",
     fontWeight: "700",
-    color: "#f8fafc"
+    color: "#0f172a",
+    lineHeight: "1.2"
   },
   metricLabel: {
     fontSize: "13px",
-    color: "#94a3b8"
+    fontWeight: "500",
+    color: "#64748b",
+    marginTop: "2px"
   },
   columns: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-    gap: "24px"
+    gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+    gap: "28px"
   },
   sectionCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "22px"
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "26px",
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
   },
   sectionHeader: {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    marginBottom: "18px",
-    borderBottom: "1px solid #334155",
-    paddingBottom: "12px"
+    marginBottom: "20px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "14px"
   },
   sectionTitle: {
-    fontSize: "16px",
+    fontSize: "17px",
     fontWeight: "600",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: 0
   },
   emptyText: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: "14px",
     fontStyle: "italic",
-    padding: "20px 0"
+    padding: "24px 0"
   },
   taskList: {
     display: "flex",
@@ -266,32 +273,35 @@ const styles: Record<string, any> = {
     gap: "12px"
   },
   taskItem: {
-    backgroundColor: "#0f172a",
-    padding: "14px",
-    borderRadius: "8px",
-    border: "1px solid #334155"
+    backgroundColor: "#f8fafc",
+    padding: "16px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    transition: "background-color 0.15s ease, border-color 0.15s ease"
   },
   taskTitleRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: "10px"
+    gap: "12px"
   },
   taskTitle: {
     fontSize: "14px",
     fontWeight: "600",
-    color: "#e2e8f0"
+    color: "#1e293b"
   },
   statusBadge: {
     fontSize: "11px",
     fontWeight: "600",
-    padding: "3px 8px",
-    borderRadius: "4px",
-    textTransform: "uppercase"
+    padding: "4px 9px",
+    borderRadius: "6px",
+    textTransform: "uppercase",
+    letterSpacing: "0.3px"
   },
   taskDesc: {
     fontSize: "13px",
-    color: "#94a3b8",
-    margin: "8px 0 0 0"
+    color: "#64748b",
+    margin: "8px 0 0 0",
+    lineHeight: "1.4"
   }
 };

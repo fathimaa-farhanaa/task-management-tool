@@ -320,7 +320,7 @@ export const PersonalTasksView: React.FC = () => {
 
 const styles: Record<string, any> = {
   container: {
-    padding: "32px",
+    padding: "36px 40px",
     maxWidth: "1000px",
     margin: "0 auto"
   },
@@ -328,78 +328,89 @@ const styles: Record<string, any> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "24px"
+    marginBottom: "28px"
   },
   heading: {
-    fontSize: "24px",
+    fontSize: "26px",
     fontWeight: "700",
-    color: "#f8fafc",
+    color: "#0f172a",
+    letterSpacing: "-0.5px",
     margin: "0 0 6px 0"
   },
   subheading: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     margin: 0
   },
   createBtn: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     color: "#ffffff",
-    padding: "10px 16px",
-    borderRadius: "8px",
+    padding: "10px 18px",
+    borderRadius: "10px",
     border: "none",
     fontWeight: "600",
-    cursor: "pointer"
+    fontSize: "14px",
+    cursor: "pointer",
+    boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)"
   },
   filterRow: {
     display: "flex",
     gap: "8px",
-    marginBottom: "24px"
+    marginBottom: "28px"
   },
   filterBtn: {
-    padding: "6px 14px",
-    borderRadius: "6px",
-    border: "1px solid #334155",
-    backgroundColor: "#1e293b",
-    color: "#94a3b8",
+    padding: "8px 16px",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    backgroundColor: "#ffffff",
+    color: "#64748b",
     fontSize: "13px",
     fontWeight: "500",
-    cursor: "pointer"
+    cursor: "pointer",
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)"
   },
   activeFilter: {
-    backgroundColor: "#3b82f6",
-    borderColor: "#3b82f6",
-    color: "#ffffff"
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: "600"
   },
   statusMsg: {
-    color: "#94a3b8",
-    textAlign: "center",
-    padding: "40px"
-  },
-  errorMsg: {
-    color: "#f87171",
-    padding: "16px",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderRadius: "8px"
-  },
-  emptyState: {
     color: "#64748b",
     textAlign: "center",
-    padding: "40px",
-    fontStyle: "italic"
+    padding: "48px",
+    fontSize: "15px"
+  },
+  errorMsg: {
+    color: "#b91c1c",
+    padding: "16px 20px",
+    backgroundColor: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "10px"
+  },
+  emptyState: {
+    color: "#94a3b8",
+    textAlign: "center",
+    padding: "48px",
+    fontStyle: "italic",
+    backgroundColor: "#ffffff",
+    borderRadius: "14px",
+    border: "1px dashed #cbd5e1"
   },
   taskList: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px"
+    gap: "16px"
   },
   taskCard: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-    padding: "18px"
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "22px",
+    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
   },
   cardHeader: {
     display: "flex",
@@ -410,7 +421,7 @@ const styles: Record<string, any> = {
   cardTitle: {
     fontSize: "16px",
     fontWeight: "600",
-    color: "#f8fafc",
+    color: "#0f172a",
     margin: 0
   },
   cardActions: {
@@ -418,74 +429,80 @@ const styles: Record<string, any> = {
     gap: "6px"
   },
   iconBtn: {
-    background: "transparent",
-    border: "none",
-    padding: "6px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    padding: "6px 8px",
     cursor: "pointer",
-    borderRadius: "4px"
+    borderRadius: "6px",
+    display: "flex",
+    alignItems: "center"
   },
   deleteBtn: {
-    background: "transparent",
-    border: "none",
-    padding: "6px",
+    background: "#fff5f5",
+    border: "1px solid #fee2e2",
+    padding: "6px 8px",
     cursor: "pointer",
-    borderRadius: "4px"
+    borderRadius: "6px",
+    display: "flex",
+    alignItems: "center"
   },
   cardDesc: {
     fontSize: "14px",
-    color: "#cbd5e1",
-    margin: "8px 0"
+    color: "#475569",
+    margin: "10px 0",
+    lineHeight: "1.4"
   },
   labelRow: {
     display: "flex",
     flexWrap: "wrap",
     gap: "6px",
-    margin: "10px 0"
+    margin: "12px 0"
   },
   labelBadge: {
     fontSize: "12px",
-    backgroundColor: "#0f172a",
-    color: "#38bdf8",
-    border: "1px solid #1e40af",
-    padding: "3px 8px",
-    borderRadius: "4px",
+    backgroundColor: "#f0f9ff",
+    color: "#0369a1",
+    border: "1px solid #bae6fd",
+    padding: "3px 9px",
+    borderRadius: "6px",
     display: "inline-flex",
-    alignItems: "center"
+    alignItems: "center",
+    fontWeight: "500"
   },
   statusSwitchRow: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    marginTop: "12px",
-    borderTop: "1px solid #334155",
-    paddingTop: "12px"
+    marginTop: "14px",
+    borderTop: "1px solid #f1f5f9",
+    paddingTop: "14px"
   },
   statusLabel: {
     fontSize: "12px",
     color: "#64748b",
-    fontWeight: "500"
+    fontWeight: "600"
   },
   statusButtons: {
     display: "flex",
-    gap: "6px"
+    gap: "8px"
   },
   statusBtn: {
     display: "flex",
     alignItems: "center",
     gap: "5px",
-    padding: "5px 10px",
-    borderRadius: "6px",
-    border: "1px solid #334155",
-    backgroundColor: "#0f172a",
-    color: "#94a3b8",
+    padding: "6px 12px",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    backgroundColor: "#ffffff",
+    color: "#64748b",
     fontSize: "12px",
     fontWeight: "500",
     cursor: "pointer"
   },
   statusBtnActive: (color: string) => ({
-    borderColor: color,
-    backgroundColor: `${color}15`,
-    color: color,
+    borderColor: color === "#f59e0b" ? "#fde68a" : color === "#38bdf8" ? "#bfdbfe" : "#a7f3d0",
+    backgroundColor: color === "#f59e0b" ? "#fffbeb" : color === "#38bdf8" ? "#eff6ff" : "#ecfdf5",
+    color: color === "#f59e0b" ? "#d97706" : color === "#38bdf8" ? "#2563eb" : "#059669",
     fontWeight: "600"
   }),
   modalOverlay: {
@@ -494,7 +511,8 @@ const styles: Record<string, any> = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    backdropFilter: "blur(4px)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -502,30 +520,30 @@ const styles: Record<string, any> = {
     padding: "20px"
   },
   modalContent: {
-    backgroundColor: "#1e293b",
-    border: "1px solid #334155",
-    borderRadius: "14px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
     width: "100%",
     maxWidth: "480px",
-    padding: "24px",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+    padding: "28px",
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)"
   },
   modalHeader: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "18px"
+    marginBottom: "20px"
   },
   modalTitle: {
     fontSize: "18px",
-    fontWeight: "600",
-    color: "#f8fafc",
+    fontWeight: "700",
+    color: "#0f172a",
     margin: 0
   },
   modalForm: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px"
+    gap: "16px"
   },
   inputGroup: {
     display: "flex",
@@ -534,15 +552,15 @@ const styles: Record<string, any> = {
   },
   inputLabel: {
     fontSize: "13px",
-    color: "#cbd5e1",
-    fontWeight: "500"
+    color: "#334155",
+    fontWeight: "600"
   },
   modalInput: {
-    padding: "10px 12px",
-    backgroundColor: "#0f172a",
-    border: "1px solid #334155",
+    padding: "11px 14px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #cbd5e1",
     borderRadius: "8px",
-    color: "#f8fafc",
+    color: "#0f172a",
     fontSize: "14px",
     outline: "none"
   },
@@ -550,25 +568,27 @@ const styles: Record<string, any> = {
     display: "flex",
     justifyContent: "flex-end",
     gap: "10px",
-    marginTop: "10px"
+    marginTop: "12px"
   },
   cancelBtn: {
-    padding: "8px 14px",
-    backgroundColor: "transparent",
-    border: "1px solid #475569",
-    borderRadius: "6px",
-    color: "#cbd5e1",
+    padding: "9px 16px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+    color: "#475569",
     fontSize: "14px",
+    fontWeight: "500",
     cursor: "pointer"
   },
   saveBtn: {
-    padding: "8px 16px",
-    backgroundColor: "#3b82f6",
+    padding: "9px 18px",
+    backgroundColor: "#2563eb",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "8px",
     color: "#ffffff",
     fontWeight: "600",
     fontSize: "14px",
-    cursor: "pointer"
+    cursor: "pointer",
+    boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)"
   }
 };

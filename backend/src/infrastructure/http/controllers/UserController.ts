@@ -27,4 +27,14 @@ export class UserController {
       next(err);
     }
   };
+
+  public search = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = (req.query.q as string) || "";
+      const users = await this.userService.searchUsers(query);
+      res.status(200).json(users);
+    } catch (err) {
+      next(err);
+    }
+  };
 }

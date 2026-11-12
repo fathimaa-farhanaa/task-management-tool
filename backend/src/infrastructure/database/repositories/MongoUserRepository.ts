@@ -40,6 +40,20 @@ export class MongoUserRepository implements IUserRepository {
     return doc ? this.toDomain(doc) : null;
   }
 
+  public async search(query: string, limit: number = 10): Promise<User[]> {
+    const clean = query.trim().toLowerCase();
+    if (!clean) return [];
+
+    const docs = await UserModel.find({
+      $or: [
+        { username: { $regex: clean, $options: "i" } },
+        { email: { $regex: clean, $options: "i" } }
+      ]
+    }).limit(limit);
+
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
   private toDomain(doc: IUserDocument): User {
     return new User({
       id: doc._id,
