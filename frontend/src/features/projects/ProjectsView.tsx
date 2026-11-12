@@ -47,7 +47,23 @@ export const ProjectsView: React.FC = () => {
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isAddingMembers, setIsAddingMembers] = useState<boolean>(false);
   const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const searchTimeoutRef = useRef<number | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Transfer Host Modal
   const [showTransferHost, setShowTransferHost] = useState<boolean>(false);
@@ -79,6 +95,7 @@ export const ProjectsView: React.FC = () => {
     if (!showAddMember) {
       setSearchQuery("");
       setSearchResults([]);
+      setIsDropdownOpen(false);
       return;
     }
 
@@ -90,6 +107,7 @@ export const ProjectsView: React.FC = () => {
     if (!trimmed) {
       setSearchResults([]);
       setIsSearching(false);
+      setIsDropdownOpen(false);
       return;
     }
 
@@ -100,6 +118,7 @@ export const ProjectsView: React.FC = () => {
           params: { q: trimmed }
         });
         setSearchResults(res.data);
+        setIsDropdownOpen(true);
       } catch (err) {
         console.error("User search failed:", err);
       } finally {
@@ -598,7 +617,15 @@ export const ProjectsView: React.FC = () => {
 
         {/* MODAL: Add Member (Live Search & Multi-Select) */}
         {showAddMember && (
-          <div style={styles.modalOverlay}>
+          <div
+            style={styles.modalOverlay}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddMember(false);
+                setIsDropdownOpen(false);
+              }
+            }}
+          >
             <div style={{ ...styles.modalContent, maxWidth: "560px" }}>
               <div style={styles.modalHeader}>
                 <div>
@@ -607,7 +634,15 @@ export const ProjectsView: React.FC = () => {
                     Search registered users by username or email and select one or multiple to add.
                   </p>
                 </div>
-                <X size={20} color="#64748b" style={{ cursor: "pointer" }} onClick={() => setShowAddMember(false)} />
+                <X
+                  size={20}
+                  color="#64748b"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setShowAddMember(false);
+                    setIsDropdownOpen(false);
+                  }}
+                />
               </div>
 
               {addMemberError && (
@@ -647,7 +682,7 @@ export const ProjectsView: React.FC = () => {
                 </div>
 
                 {/* Live Search Input with Dropdown */}
-                <div style={styles.searchSection}>
+                <div style={styles.searchSection} ref={searchContainerRef}>
                   <label style={styles.inputLabel}>Search Users by Username or Email</label>
                   <div style={styles.searchInputWrapper}>
                     <Search size={16} color="#94a3b8" style={{ marginLeft: 12, flexShrink: 0 }} />
@@ -655,7 +690,15 @@ export const ProjectsView: React.FC = () => {
                       type="text"
                       placeholder="Type username or email (e.g. alex, john@...)"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        if (searchQuery.trim().length > 0) {
+                          setIsDropdownOpen(true);
+                        }
+                      }}
                       style={styles.searchInput}
                       autoFocus
                     />
@@ -665,7 +708,7 @@ export const ProjectsView: React.FC = () => {
                   </div>
 
                   {/* Search Dropdown Results */}
-                  {searchQuery.trim().length > 0 && (
+                  {isDropdownOpen && searchQuery.trim().length > 0 && (
                     <div style={styles.dropdownBox}>
                       {searchResults.length === 0 ? (
                         <div style={styles.dropdownEmpty}>
@@ -743,6 +786,7 @@ export const ProjectsView: React.FC = () => {
                       setShowAddMember(false);
                       setSelectedUsers([]);
                       setSearchQuery("");
+                      setIsDropdownOpen(false);
                     }}
                     style={styles.cancelBtn}
                   >
@@ -1438,14 +1482,17 @@ const styles: Record<string, any> = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
-    padding: "20px"
+    padding: "20px",
+    overflowY: "auto"
   },
   modalContent: {
     backgroundColor: "#ffffff",
     border: "1px solid #e2e8f0",
     borderRadius: "16px",
     width: "100%",
-    maxWidth: "480px",
+    maxWidth: "520px",
+    maxHeight: "calc(100vh - 40px)",
+    overflowY: "auto",
     padding: "28px",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)"
   },
@@ -1581,14 +1628,17 @@ const styles: Record<string, any> = {
     color: "#0f172a"
   },
   dropdownBox: {
-    marginTop: "4px",
+    position: "absolute",
+    top: "calc(100% + 4px)",
+    left: 0,
+    right: 0,
     backgroundColor: "#ffffff",
     border: "1px solid #cbd5e1",
     borderRadius: "10px",
-    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05)",
-    maxHeight: "220px",
+    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+    maxHeight: "180px",
     overflowY: "auto",
-    zIndex: 20
+    zIndex: 100
   },
   dropdownEmpty: {
     padding: "16px",
