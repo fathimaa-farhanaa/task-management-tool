@@ -5,6 +5,7 @@ import { Navbar } from "./components/Navbar";
 import type { NavTab } from "./components/Navbar";
 import { DashboardView } from "./features/dashboard/DashboardView";
 import { PersonalTasksView } from "./features/personal-tasks/PersonalTasksView";
+import { ProjectsView } from "./features/projects/ProjectsView";
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -28,11 +29,7 @@ const MainApp: React.FC = () => {
       <main>
         {activeTab === "dashboard" && <DashboardView />}
         {activeTab === "personal" && <PersonalTasksView />}
-        {activeTab === "projects" && (
-          <div style={{ padding: "32px", textAlign: "center", color: "#94a3b8" }}>
-            Projects Component Loading...
-          </div>
-        )}
+        {activeTab === "projects" && <ProjectsView />}
       </main>
     </div>
   );
